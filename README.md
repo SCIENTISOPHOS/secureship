@@ -167,4 +167,4 @@ Dockerfile      image durcie multi-étapes
 
 ---
 
-Auteur : **Mahomed Arafat Anjoueneya Mouansie** — étudiant ingénieur Sécurité des Systèmes d'information (UTT)
+Auteur : **Mahomed Arafat Anjoueneya Mouansie** — étudiant ingénieur Sécurité des Systèmes d'information (UTT) · [Portfolio](https://credential-canvas-portfolio.lovable.app/)
