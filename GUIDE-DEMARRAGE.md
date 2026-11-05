@@ -378,7 +378,7 @@ Désormais, **chaque jour à 06:17 (heure de Paris)**, la pipeline rafraîchit l
 | Étape 2 : Semgrep ou Bandit rouge | Vraie alerte dans ton code | Lis la règle et corrige ; ne désactive jamais un contrôle sans le justifier |
 | Étape 4 : Gitleaks rouge | Un secret a été commité | Révoque le secret, puis retire-le de l'historique |
 | Étape 6 : Trivy rouge sans changement de code | Nouvelle faille dans l'image de base | Reconstruis plus tard ou applique la PR Dependabot |
-| Étape 9 : `AADSTS700213` ou *No matching federated identity* | Nom du dépôt ou de l'environnement différent | Vérifie `github_repository` et l'environnement `production`, puis `terraform apply` |
+| Étape 9 : `AADSTS700213` ou *No matching federated identity* | GitHub envoie un *subject* différent (nouveau format avec identifiants numériques, ou mauvais environnement) | Copie le subject affiché dans l'erreur (`repo:…:environment:production`) dans `github_oidc_subject` de `terraform.tfvars`, puis `terraform apply` |
 | Étape 9 : l'image ne se télécharge pas | Package GHCR privé | Rends-le public (étape 5) |
 | `RequestDisallowedByPolicy` | Région non autorisée | Change `location` dans `terraform.tfvars` |
 | Le site affiche « Mode démonstration » | Flux pas encore généré | Étape 11, puis relance la pipeline |

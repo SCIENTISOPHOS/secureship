@@ -89,13 +89,17 @@ resource "azurerm_user_assigned_identity" "github" {
 }
 
 resource "azurerm_federated_identity_credential" "github_production" {
-  name                = "github-${var.project}-production"
-  resource_group_name = azurerm_resource_group.main.name
-  parent_id           = azurerm_user_assigned_identity.github.id
-  audience            = ["api://AzureADTokenExchange"]
-  issuer              = "https://token.actions.githubusercontent.com"
+  name      = "github-${var.project}-production"
+  parent_id = azurerm_user_assigned_identity.github.id
+  audience  = ["api://AzureADTokenExchange"]
+  issuer    = "https://token.actions.githubusercontent.com"
   # Seul le job utilisant l'environnement GitHub "production" de CE dépôt peut se connecter.
-  subject = "repo:${var.github_repository}:environment:production"
+  # Les nouveaux dépôts GitHub incluent les identifiants numériques du compte et du dépôt
+  # dans le "subject" (immuable : un dépôt supprimé puis recréé sous le même nom est refusé).
+  subject = coalesce(
+    var.github_oidc_subject,
+    "repo:${var.github_repository}:environment:production",
+  )
 }
 
 # Moindre privilège : droits limités au seul groupe de ressources du projet.

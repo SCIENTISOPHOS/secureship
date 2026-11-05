@@ -3,3 +3,6 @@ subscription_id    = "00000000-0000-0000-0000-000000000000"
 github_repository  = "SCIENTISOPHOS/secureship"
 budget_alert_email = "ton.adresse@exemple.fr"
 location           = "francecentral"
+
+# Si le déploiement échoue avec AADSTS700213, recopier ici le subject affiché dans l'erreur :
+# github_oidc_subject = "repo:SCIENTISOPHOS@123456/secureship@789012:environment:production"

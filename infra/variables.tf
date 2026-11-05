@@ -8,6 +8,15 @@ variable "github_repository" {
   type        = string
 }
 
+variable "github_oidc_subject" {
+  description = <<-EOT
+    Subject OIDC exact envoyé par GitHub, si le dépôt utilise le format avec identifiants,
+    ex. "repo:OWNER@123/REPO@456:environment:production" (visible dans l'erreur AADSTS700213).
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "location" {
   description = "Région Azure (Azure for Students limite parfois les régions autorisées)"
   type        = string
