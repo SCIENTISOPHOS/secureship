@@ -1,0 +1,16 @@
+{
+  "_comment": "Jeu de démonstration : plages IP de documentation (RFC 5737), domaines .example (RFC 2606) et hash du fichier de test EICAR. Aucun indicateur réel.",
+  "ips": {
+    "192.0.2.10": {"threat": "C2 server", "source": "Démonstration SecureShip", "confidence": 90},
+    "198.51.100.23": {"threat": "Brute-force SSH", "source": "Démonstration SecureShip", "confidence": 75},
+    "203.0.113.66": {"threat": "Phishing hosting", "source": "Démonstration SecureShip", "confidence": 80}
+  },
+  "domains": {
+    "malicious.example": {"threat": "Malware distribution", "source": "Démonstration SecureShip", "confidence": 85},
+    "phishing-login.example": {"threat": "Credential phishing", "source": "Démonstration SecureShip", "confidence": 95}
+  },
+  "hashes": {
+    "44d88612fea8a8f36de82e1278abb02f": {"threat": "EICAR test file (MD5)", "source": "eicar.org", "confidence": 100},
+    "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f": {"threat": "EICAR test file (SHA-256)", "source": "eicar.org", "confidence": 100}
+  }
+}

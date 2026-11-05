@@ -1,0 +1,5 @@
+# Copier en terraform.tfvars (ignoré par Git) puis remplir.
+subscription_id    = "00000000-0000-0000-0000-000000000000"
+github_repository  = "SCIENTISOPHOS/secureship"
+budget_alert_email = "ton.adresse@exemple.fr"
+location           = "francecentral"

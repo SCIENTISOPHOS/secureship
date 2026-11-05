@@ -1,0 +1,2 @@
+10049	IGNORE	(Non Storable Content - attendu : Cache-Control no-store volontaire)
+10036	IGNORE	(Server Leaks Version - en-tête Server supprimé par uvicorn --no-server-header)

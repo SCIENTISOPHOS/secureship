@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.coverage
+coverage.xml
+*.sarif
+.pytest_cache/
+.ruff_cache/
+# Terraform : ne jamais versionner l'état (il contient des infos sensibles)
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+infra/.terraform.lock.hcl.bak
+app/data/iocs_feed.json

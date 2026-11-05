@@ -1,0 +1,19 @@
+[project]
+name = "secureship"
+version = "1.0.0"
+description = "IoC Checker API déployée via une pipeline DevSecOps sur Azure"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=app --cov=scripts --cov-report=term-missing --cov-fail-under=90"
+testpaths = ["tests"]

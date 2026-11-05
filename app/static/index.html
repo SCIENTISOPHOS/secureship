@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureShip · Vérifier un indicateur suspect</title>
+  <meta name="description" content="Vérifiez gratuitement si une adresse IP, un lien, un domaine ou un fichier est signalé comme malveillant.">
+  <link rel="icon" href="/static/flag.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#check" data-i18n="skip">Aller au formulaire</a>
+
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="SecureShip, accueil">
+      <img src="/static/flag.svg" alt="" width="28" height="28">
+      <span>SecureShip</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#guide" data-i18n="nav.guide">Comprendre</a>
+      <a href="#data" data-i18n="nav.data">Données</a>
+      <a href="#dev" data-i18n="nav.dev">Développeurs</a>
+      <a href="#faq" data-i18n="nav.faq">Questions</a>
+    </nav>
+    <button type="button" class="lang" id="lang-toggle" aria-label="Switch to English">EN</button>
+  </header>
+
+  <main>
+    <section class="hero" id="check" aria-labelledby="title">
+      <h1 id="title" data-i18n="hero.title">Un lien, une adresse ou un fichier vous semble suspect&nbsp;? Vérifiez-le ici.</h1>
+      <p class="lead" data-i18n="hero.lead">SecureShip compare ce que vous collez à des milliers d'indicateurs de menaces signalés par la communauté cyber, mis à jour chaque matin.</p>
+
+      <form id="check-form" novalidate>
+        <label for="indicators" data-i18n="form.label">Ce que vous voulez vérifier</label>
+        <textarea id="indicators" name="indicators" rows="3" spellcheck="false" autocomplete="off"
+                  aria-describedby="form-hint" data-i18n-placeholder="form.placeholder"
+                  placeholder="Exemple : https://site-douteux.example/connexion"></textarea>
+        <p id="form-hint" class="hint" data-i18n="form.hint">Un élément par ligne, 100 au maximum. Les liens «&nbsp;désarmés&nbsp;» comme hxxp://site[.]com sont acceptés.</p>
+        <div class="actions">
+          <button type="submit" class="primary" id="submit-btn" data-i18n="form.submit">Vérifier</button>
+          <button type="button" class="ghost" id="clear-btn" data-i18n="form.clear">Effacer</button>
+        </div>
+      </form>
+
+      <div class="examples">
+        <p data-i18n="examples.title">Pas d'exemple sous la main&nbsp;? Essayez&nbsp;:</p>
+        <ul>
+          <li><button type="button" data-example="192.0.2.10" data-i18n="examples.c2">une adresse de serveur pirate</button></li>
+          <li><button type="button" data-example="hxxps://login.phishing-login[.]example/compte" data-i18n="examples.phishing">un lien d'hameçonnage</button></li>
+          <li><button type="button" data-example="275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f" data-i18n="examples.eicar">le fichier de test antivirus EICAR</button></li>
+          <li><button type="button" data-example="utt.fr" data-i18n="examples.clean">un site ordinaire</button></li>
+        </ul>
+      </div>
+
+      <p class="privacy" data-i18n="privacy">Vos recherches ne sont ni enregistrées ni transmises à un tiers : la comparaison se fait sur le serveur de SecureShip.</p>
+    </section>
+
+    <section class="results" id="results" aria-live="polite" aria-busy="false" hidden>
+      <h2 id="results-title" tabindex="-1" data-i18n="results.title">Résultats</h2>
+      <p class="summary" id="results-summary"></p>
+      <ol class="manifest" id="results-list"></ol>
+    </section>
+
+    <section class="guide" id="guide" aria-labelledby="guide-title">
+      <h2 id="guide-title" data-i18n="guide.title">Lire le résultat</h2>
+      <div class="verdicts">
+        <article>
+          <span class="stamp stamp-bad" data-i18n="verdict.bad">Signalé</span>
+          <h3 data-i18n="guide.bad.title">Connu comme malveillant</h3>
+          <p data-i18n="guide.bad.text">L'élément figure dans une base de menaces. N'ouvrez pas le lien, ne lancez pas le fichier et prévenez votre service informatique si c'est un appareil professionnel.</p>
+        </article>
+        <article>
+          <span class="stamp stamp-good" data-i18n="verdict.good">Rien trouvé</span>
+          <h3 data-i18n="guide.good.title">Absent de la base</h3>
+          <p data-i18n="guide.good.text">Aucun signalement connu. Ce n'est pas une garantie : une menace toute récente peut ne pas encore être répertoriée. Restez prudent si le message vous presse ou vous demande vos identifiants.</p>
+        </article>
+        <article>
+          <span class="stamp stamp-none" data-i18n="verdict.invalid">Non reconnu</span>
+          <h3 data-i18n="guide.invalid.title">Format inconnu</h3>
+          <p data-i18n="guide.invalid.text">Ce n'est ni une adresse IP, ni un domaine, ni un lien, ni une empreinte de fichier. Vérifiez qu'il n'y a pas de faute de frappe ou d'espace en trop.</p>
+        </article>
+      </div>
+
+      <h2 data-i18n="types.title">Ce que vous pouvez vérifier</h2>
+      <dl class="types">
+        <div>
+          <dt data-i18n="types.url">Un lien (URL)</dt>
+          <dd><span data-i18n="types.url.text">Le domaine est extrait automatiquement. Copiez le lien avec un clic droit plutôt que de l'ouvrir.</span> <code>https://exemple.com/page</code></dd>
+        </div>
+        <div>
+          <dt data-i18n="types.domain">Un nom de domaine</dt>
+          <dd><span data-i18n="types.domain.text">Les sous-domaines d'un domaine signalé sont signalés aussi.</span> <code>connexion.exemple.com</code></dd>
+        </div>
+        <div>
+          <dt data-i18n="types.ip">Une adresse IP</dt>
+          <dd><span data-i18n="types.ip.text">IPv4 ou IPv6, avec ou sans numéro de port. Les adresses de réseau local sont identifiées comme privées.</span> <code>203.0.113.66:443</code></dd>
+        </div>
+        <div>
+          <dt data-i18n="types.hash">L'empreinte d'un fichier (hash)</dt>
+          <dd><span data-i18n="types.hash.text">Une suite de 32, 40 ou 64 caractères qui identifie un fichier sans l'envoyer. Formats MD5, SHA-1 et SHA-256.</span></dd>
+        </div>
+      </dl>
+
+      <h3 data-i18n="hash.title">Obtenir l'empreinte d'un fichier sans l'ouvrir</h3>
+      <p data-i18n="hash.text">Le fichier ne quitte jamais votre ordinateur : seule son empreinte est vérifiée. Ouvrez un terminal dans le dossier du fichier, puis tapez :</p>
+      <dl class="commands">
+        <div><dt>Windows</dt><dd><code>certutil -hashfile fichier.pdf SHA256</code></dd></div>
+        <div><dt>macOS</dt><dd><code>shasum -a 256 fichier.pdf</code></dd></div>
+        <div><dt>Linux</dt><dd><code>sha256sum fichier.pdf</code></dd></div>
+      </dl>
+    </section>
+
+    <section class="data" id="data" aria-labelledby="data-title">
+      <h2 id="data-title" data-i18n="data.title">D'où viennent les données</h2>
+      <div class="ledger">
+        <p><strong id="stat-ips">–</strong> <span data-i18n="data.ips">adresses IP</span></p>
+        <p><strong id="stat-domains">–</strong> <span data-i18n="data.domains">domaines</span></p>
+        <p><strong id="stat-hashes">–</strong> <span data-i18n="data.hashes">empreintes de fichiers</span></p>
+      </div>
+      <p id="feed-status" class="feed-status"></p>
+      <p data-i18n="data.text">Chaque matin, SecureShip télécharge les indicateurs des sept derniers jours publiés par ThreatFox, une base gratuite de l'organisation suisse abuse.ch alimentée par des chercheurs en sécurité. Chaque entrée est vérifiée avant d'être ajoutée, et les grands services légitimes sont exclus pour éviter les fausses alertes.</p>
+      <p data-i18n="data.demo">Quelques entrées de démonstration, sans danger, sont toujours présentes pour tester l'outil : elles utilisent des adresses réservées à la documentation et le fichier de test antivirus EICAR.</p>
+    </section>
+
+    <section class="dev" id="dev" aria-labelledby="dev-title">
+      <h2 id="dev-title" data-i18n="dev.title">Pour les développeurs et les analystes</h2>
+      <p><span data-i18n="dev.text">Tout ce que fait cette page passe par une API REST publique, documentée et testable dans le navigateur :</span> <a href="/docs" data-i18n="dev.docs">ouvrir la documentation interactive</a>.</p>
+      <pre><code># <span data-i18n="dev.c1">Un indicateur, type détecté automatiquement</span>
+curl "<span class="origin"></span>/api/v1/check?q=hxxp://evil[.]example"
+
+# <span data-i18n="dev.c2">Jusqu'à 100 indicateurs d'un coup</span>
+curl -X POST "<span class="origin"></span>/api/v1/check/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{"indicators": ["192.0.2.10", "utt.fr"]}'</code></pre>
+      <p><span data-i18n="dev.repo">Code source, pipeline DevSecOps et infrastructure Azure :</span> <a href="https://github.com/SCIENTISOPHOS/secureship">github.com/SCIENTISOPHOS/secureship</a>.</p>
+    </section>
+
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title" data-i18n="faq.title">Questions fréquentes</h2>
+      <details>
+        <summary data-i18n="faq.q1">Mes recherches sont-elles enregistrées&nbsp;?</summary>
+        <p data-i18n="faq.a1">Non. Les éléments que vous vérifiez ne sont ni stockés ni envoyés à un autre service. La base de menaces est chargée sur le serveur, et la comparaison se fait localement.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q2">«&nbsp;Rien trouvé&nbsp;» veut-il dire que c'est sans danger&nbsp;?</summary>
+        <p data-i18n="faq.a2">Non. Cela veut dire qu'aucun signalement n'est connu. Les attaquants créent de nouveaux sites chaque jour. Méfiez-vous d'un message qui vous presse, promet un gain ou demande un mot de passe.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q3">J'ai cliqué sur un lien signalé. Que faire&nbsp;?</summary>
+        <p data-i18n="faq.a3">Si vous avez saisi un mot de passe, changez-le immédiatement sur le vrai site et activez la double authentification. Lancez une analyse antivirus. Sur un appareil professionnel, prévenez votre service informatique. En France, cybermalveillance.gouv.fr propose une aide gratuite.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q4">Pourquoi un site réputé est-il parfois signalé&nbsp;?</summary>
+        <p data-i18n="faq.a4">Des pirates hébergent parfois leurs fichiers sur des services légitimes. SecureShip exclut les plus grands pour limiter les fausses alertes, mais un signalement reste possible. Le détail du résultat indique la menace et le niveau de confiance.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q5">Qui a créé ce site&nbsp;?</summary>
+        <p data-i18n="faq.a5">Mahomed Arafat Anjoueneya Mouansie, étudiant ingénieur en sécurité des systèmes d'information à l'Université de Technologie de Troyes, dans le cadre d'un projet DevSecOps : chaque modification est testée, analysée et déployée automatiquement sur Azure.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><span data-i18n="footer.text">Projet open source sous licence MIT. Outil d'aide à la décision, sans garantie.</span> <span id="version"></span></p>
+  </footer>
+</body>
+</html>

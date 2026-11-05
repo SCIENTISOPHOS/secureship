@@ -1,0 +1,298 @@
+name: DevSecOps pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  # Chaque jour : flux Threat Intelligence rafraîchi + image re-scannée contre les nouvelles CVE
+  schedule:
+    - cron: "17 5 * * *" # 05:17 UTC
+
+# Principe du moindre privilège : lecture seule par défaut, chaque job demande ce qu'il lui faut.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  # 0. Threat Intelligence : récupération et validation du flux ThreatFox (abuse.ch)
+  threat-feed:
+    name: 0 · Flux IoC (ThreatFox)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Mise à jour du flux
+        env:
+          ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
+        # Sans clé, le site fonctionne en mode démonstration ; seule l'exécution
+        # quotidienne exige la clé (son but est justement de rafraîchir le flux).
+        run: python scripts/update_iocs.py --days 7 ${{ github.event_name != 'schedule' && '--optional' || '' }}
+      - name: Conservation du flux (traçabilité, 30 jours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: iocs-feed
+          path: app/data/iocs_feed.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # 1. Qualité : lint + tests unitaires avec couverture minimale de 90 %
+  quality:
+    name: 1 · Lint & tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check . && ruff format --check .
+      - run: pytest --cov-report=xml
+
+  # 2. SAST : analyse statique du code (failles OWASP, mauvaises pratiques)
+  sast:
+    name: 2 · SAST (Semgrep + Bandit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install semgrep bandit[sarif]
+      - name: Semgrep
+        run: semgrep scan --config p/python --config p/owasp-top-ten --error --sarif --output semgrep.sarif
+      - name: Bandit
+        run: bandit -r app scripts -f sarif -o bandit.sarif
+      - name: Envoi des résultats dans l'onglet Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+
+  # 3. SCA : dépendances Python vulnérables (base OSV / PyPI advisories)
+  sca:
+    name: 3 · Dépendances (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt --strict
+
+  # 4. Secrets : aucun mot de passe / clé ne doit être commité (tout l'historique est scanné)
+  secrets:
+    name: 4 · Secrets (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 5. Dockerfile & Terraform : bonnes pratiques et mauvaises configurations
+  iac:
+    name: 5 · Dockerfile & IaC (Hadolint + Checkov)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          soft_fail: true # passer à false une fois les écarts justifiés
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: checkov
+
+  # 6. Build de l'image + scan Trivy : bloque si une faille HIGH/CRITICAL corrigeable existe
+  build-scan:
+    name: 6 · Build & scan image (Trivy)
+    needs: [threat-feed, quality, sast, sca, secrets, iac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nom de l'image (GHCR exige des minuscules)
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Récupération du flux IoC du jour
+        uses: actions/download-artifact@v4
+        continue-on-error: true # absent si pas de clé (Pull Request)
+        with:
+          name: iocs-feed
+          path: app/data
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (sans push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Scan Trivy (rapport SARIF)
+        uses: aquasecurity/trivy-action@0.35.0 # >= 0.35.0 : versions antérieures compromises (CVE-2026-33634)
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy.sarif
+          ignore-unfixed: true
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+      - name: Security gate Trivy (échec si HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.35.0 # >= 0.35.0 : versions antérieures compromises (CVE-2026-33634)
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+  # 7-8. Publication sur GHCR + SBOM + signature (uniquement sur main)
+  publish:
+    name: 7-8 · Push, SBOM & signature (Cosign)
+    needs: build-scan
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # signature "keyless" Sigstore via OIDC
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nom de l'image (GHCR exige des minuscules)
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Récupération du flux IoC du jour
+        uses: actions/download-artifact@v4
+        continue-on-error: true # absent si pas de clé (Pull Request)
+        with:
+          name: iocs-feed
+          path: app/data
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          provenance: true
+      - name: SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - uses: sigstore/cosign-installer@v3
+      - name: Signature de l'image et attestation SBOM
+        run: |
+          cosign sign --yes "${IMAGE_NAME}@${DIGEST}"
+          cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${IMAGE_NAME}@${DIGEST}"
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+
+  # 9. Déploiement Azure Container Apps : connexion OIDC, aucun secret Azure stocké
+  deploy:
+    name: 9 · Déploiement Azure
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      url: ${{ steps.url.outputs.url }}
+    steps:
+      - name: Nom de l'image (GHCR exige des minuscules)
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Mise à jour de la Container App (image signée, par digest)
+        run: |
+          az containerapp update \
+            --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --image "${IMAGE_NAME}@${{ needs.publish.outputs.digest }}" \
+            --set-env-vars APP_VERSION=${{ github.sha }}
+      - id: url
+        name: Récupération de l'URL publique
+        run: |
+          FQDN=$(az containerapp show -n "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+            -g "${{ vars.AZURE_RESOURCE_GROUP }}" --query properties.configuration.ingress.fqdn -o tsv)
+          echo "url=https://${FQDN}" >> "$GITHUB_OUTPUT"
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 10); do
+            curl -fsS "${{ steps.url.outputs.url }}/health" && exit 0
+            sleep 10
+          done
+          exit 1
+
+  # 10. DAST : OWASP ZAP attaque l'application réellement déployée (scan passif)
+  dast:
+    name: 10 · DAST (OWASP ZAP)
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zaproxy/action-api-scan@v0.9.0
+        with:
+          target: ${{ needs.deploy.outputs.url }}/openapi.json
+          format: openapi
+          rules_file_name: .zap/rules.tsv
+          allow_issue_writing: false
+          fail_action: true
+          cmd_options: "-a -I"

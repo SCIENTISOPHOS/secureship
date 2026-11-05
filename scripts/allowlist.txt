@@ -1,0 +1,14 @@
+# Domaines jamais signalés comme malveillants (réduction des faux positifs).
+# Un sous-domaine d'une entrée est aussi exclu (ex. drive.google.com).
+google.com
+microsoft.com
+windows.net
+azure.com
+github.com
+githubusercontent.com
+amazonaws.com
+cloudflare.com
+apple.com
+dropbox.com
+discord.com
+telegram.org

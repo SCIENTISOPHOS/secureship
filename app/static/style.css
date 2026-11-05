@@ -1,0 +1,251 @@
+/* SecureShip — langage visuel : manifeste d'inspection portuaire.
+   Le jaune est celui du pavillon Q (« quarantaine ») ; les verdicts sont des tampons. */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("/static/fonts/archivo-latin-wdth-normal.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plex Mono";
+  src: url("/static/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --paper: #e8edf1;
+  --surface: #f7f9fa;
+  --ink: #14213d;
+  --muted: #4a5a70;
+  --rule: #b9c4cf;
+  --signal: #f2c230;
+  --alarm: #b8152b;
+  --clear: #23704f;
+  --neutral: #5c6b7e;
+  --focus: #1d5fd6;
+  --measure: 40rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1726;
+    --surface: #15213a;
+    --ink: #e4eaf1;
+    --muted: #9daabb;
+    --rule: #2c3a50;
+    --alarm: #f27575;
+    --clear: #5bc392;
+    --neutral: #9daabb;
+    --focus: #7fb0ff;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Archivo", system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-stretch: 100%;
+}
+
+a { color: inherit; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+
+code, pre, .indicator { font-family: "Plex Mono", ui-monospace, monospace; font-size: 0.9em; }
+code { overflow-wrap: anywhere; }
+
+.skip { position: absolute; left: -999px; top: 0.5rem; background: var(--ink); color: var(--paper); padding: 0.5rem 1rem; z-index: 2; }
+.skip:focus { left: 1rem; }
+
+/* ---------- En-tête ---------- */
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+.brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; font-weight: 800; font-stretch: 125%; font-size: 1.15rem; }
+.masthead nav { display: flex; gap: 1.25rem; margin-left: auto; font-size: 0.95rem; }
+.masthead nav a { text-decoration: none; color: var(--muted); }
+.masthead nav a:hover { color: var(--ink); text-decoration: underline; }
+.lang {
+  font: inherit; font-weight: 700; font-size: 0.85rem;
+  background: none; color: var(--ink);
+  border: 1.5px solid var(--ink); border-radius: 2px;
+  padding: 0.2rem 0.55rem; cursor: pointer;
+}
+
+main { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
+section { padding: 3.5rem 0; border-top: 1px solid var(--rule); }
+section.hero { border-top: 0; padding-top: 3rem; }
+
+h1, h2, h3 { line-height: 1.12; margin: 0 0 1rem; }
+h1 {
+  font-size: clamp(2.2rem, 5.4vw, 4.4rem);
+  font-weight: 800;
+  font-stretch: 112%;
+  letter-spacing: -0.02em;
+  max-width: 18ch;
+}
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 750; font-stretch: 108%; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { max-width: var(--measure); margin: 0 0 1rem; }
+.lead { font-size: 1.25rem; color: var(--muted); max-width: 36rem; }
+
+/* ---------- Formulaire ---------- */
+form { margin-top: 2rem; max-width: 46rem; }
+label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 7.5rem;
+  resize: vertical;
+  padding: 1rem 1.1rem;
+  font-family: "Plex Mono", ui-monospace, monospace;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+}
+textarea::placeholder { color: var(--muted); opacity: 0.8; }
+.hint { font-size: 0.92rem; color: var(--muted); margin-top: 0.5rem; }
+.actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+button { font: inherit; cursor: pointer; }
+.primary {
+  font-weight: 800; font-stretch: 110%;
+  padding: 0.8rem 2rem;
+  background: var(--signal); color: #14213d;
+  border: 2px solid var(--ink); border-radius: 3px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.primary:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.primary[disabled] { opacity: 0.6; cursor: progress; }
+.ghost { padding: 0.8rem 1.2rem; background: none; color: var(--ink); border: 0; text-decoration: underline; text-underline-offset: 0.2em; }
+
+.examples { margin-top: 2rem; }
+.examples p { margin-bottom: 0.5rem; color: var(--muted); }
+.examples ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.examples button {
+  background: none; color: var(--ink);
+  border: 1px dashed var(--muted); border-radius: 2px;
+  padding: 0.35rem 0.75rem; font-size: 0.95rem;
+}
+.examples button:hover { border-style: solid; border-color: var(--ink); }
+.privacy { margin-top: 2rem; font-size: 0.92rem; color: var(--muted); padding-left: 0.9rem; border-left: 3px solid var(--signal); }
+
+/* ---------- Résultats : le manifeste ---------- */
+.results h2:focus { outline: none; }
+.summary { font-size: 1.15rem; }
+.manifest { list-style: none; padding: 0; margin: 1.5rem 0 0; counter-reset: line; }
+.manifest > li {
+  counter-increment: line;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 0.25rem 1.25rem;
+  align-items: start;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--rule);
+}
+.manifest > li:last-child { border-bottom: 1px solid var(--rule); }
+.manifest > li::before {
+  content: counter(line, decimal-leading-zero);
+  font-family: "Plex Mono", monospace; color: var(--muted); font-size: 0.9rem; padding-top: 0.2rem;
+}
+.manifest .entry { grid-column: 2; grid-row: 1; min-width: 0; }
+.manifest .indicator { font-size: 1.05rem; overflow-wrap: anywhere; margin: 0; max-width: none; }
+.manifest .kind { color: var(--muted); font-size: 0.92rem; margin: 0.15rem 0 0.75rem; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.3rem 1rem; margin: 0 0 0.75rem; font-size: 0.97rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.advice { font-size: 0.97rem; margin: 0; }
+.meter { display: inline-block; width: 6rem; height: 0.55rem; border: 1px solid var(--ink); vertical-align: middle; margin-right: 0.5rem; }
+.meter > span { display: block; height: 100%; background: var(--alarm); }
+
+/* Le tampon : seul élément expressif de la page */
+.stamp {
+  display: inline-block;
+  font-weight: 850;
+  font-stretch: 125%;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.75rem;
+  border: 3px solid currentColor;
+  border-radius: 4px;
+  transform: rotate(-5deg);
+  white-space: nowrap;
+}
+.stamp-bad { color: var(--alarm); box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px currentColor; }
+.stamp-good { color: var(--clear); }
+.stamp-none { color: var(--neutral); border-style: dashed; }
+.manifest .stamp { grid-column: 3; grid-row: 1 / span 3; margin: 0.25rem 0.5rem 0 0; }
+.manifest .stamp.fresh { animation: stamp 260ms cubic-bezier(.2, .9, .3, 1.3) both; }
+@keyframes stamp {
+  from { opacity: 0; transform: rotate(-5deg) scale(1.6); }
+  to { opacity: 1; transform: rotate(-5deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .manifest .stamp.fresh { animation: none; }
+}
+
+/* ---------- Guide ---------- */
+.verdicts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; margin-bottom: 3.5rem; }
+.verdicts .stamp { margin-bottom: 1.25rem; }
+.verdicts p { font-size: 0.98rem; }
+.types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2.5rem; margin: 0 0 3rem; }
+.types dt { font-weight: 700; margin-bottom: 0.25rem; }
+.types dd { margin: 0; color: var(--muted); max-width: 32rem; }
+.types code { display: block; margin-top: 0.4rem; color: var(--ink); }
+.commands { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.5rem 1.25rem; max-width: 40rem; }
+.commands > div { display: contents; }
+.commands dt { font-weight: 700; padding-top: 0.15rem; }
+.commands dd { margin: 0; }
+.commands code { background: var(--surface); padding: 0.15rem 0.45rem; border: 1px solid var(--rule); border-radius: 2px; }
+
+/* ---------- Données ---------- */
+.ledger { display: flex; flex-wrap: wrap; gap: 1rem 3.5rem; margin: 0 0 1.5rem; }
+.ledger p { margin: 0; color: var(--muted); }
+.ledger strong { display: block; color: var(--ink); font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; font-stretch: 112%; line-height: 1; font-variant-numeric: tabular-nums; }
+.feed-status { font-weight: 600; }
+
+/* ---------- Développeurs ---------- */
+pre {
+  background: var(--ink); color: var(--paper);
+  padding: 1.25rem 1.4rem; border-radius: 3px;
+  overflow-x: auto; max-width: 52rem; font-size: 0.9rem; line-height: 1.6;
+}
+
+/* ---------- FAQ ---------- */
+details { border-top: 1px solid var(--rule); padding: 1rem 0; max-width: 46rem; }
+details:last-child { border-bottom: 1px solid var(--rule); }
+summary { cursor: pointer; font-weight: 700; }
+details p { margin: 0.75rem 0 0; color: var(--muted); }
+
+.footer { max-width: 72rem; margin: 0 auto; padding: 2rem 1.5rem 3rem; color: var(--muted); font-size: 0.9rem; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 760px) {
+  .masthead { flex-wrap: wrap; gap: 0.75rem 1rem; padding: 1rem; }
+  .masthead nav { order: 3; width: 100%; margin-left: 0; gap: 1rem; overflow-x: auto; }
+  .lang { margin-left: auto; }
+  main { padding: 0 1rem; }
+  section { padding: 2.5rem 0; }
+  .verdicts, .types { grid-template-columns: 1fr; gap: 2rem; }
+  .manifest > li { grid-template-columns: 2rem minmax(0, 1fr); }
+  .manifest .stamp { grid-column: 2; grid-row: 1; justify-self: start; margin: 0 0 0.75rem; }
+  .manifest .entry { grid-row: 2; }
+  .commands { grid-template-columns: 1fr; }
+  .actions { flex-wrap: wrap; }
+}
