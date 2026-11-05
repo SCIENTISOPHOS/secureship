@@ -44,7 +44,7 @@ jobs:
             python scripts/update_iocs.py --days 7 --optional
           fi
       - name: Conservation du flux (traçabilité, 30 jours)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: iocs-feed
           path: app/data/iocs_feed.json
