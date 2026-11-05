@@ -30,6 +30,8 @@ jobs:
   threat-feed:
     name: 0 · Flux IoC (ThreatFox)
     runs-on: ubuntu-latest
+    outputs:
+      present: ${{ steps.check.outputs.present }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -47,7 +49,12 @@ jobs:
           else
             python scripts/update_iocs.py --days 7 --optional
           fi
+      - id: check
+        name: Flux généré ?
+        run: |
+          if [ -f app/data/iocs_feed.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; fi
       - name: Conservation du flux (traçabilité, 30 jours)
+        if: steps.check.outputs.present == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: iocs-feed
@@ -163,7 +170,7 @@ jobs:
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
       - name: Récupération du flux IoC du jour
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        continue-on-error: true # absent si pas de clé (Pull Request)
+        if: needs.threat-feed.outputs.present == 'true' # absent sans clé ThreatFox
         with:
           name: iocs-feed
           path: app/data
@@ -200,7 +207,7 @@ jobs:
   # 7-8. Publication sur GHCR + SBOM + signature (uniquement sur main)
   publish:
     name: 7-8 · Push, SBOM & signature (Cosign)
-    needs: build-scan
+    needs: [threat-feed, build-scan]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -215,7 +222,7 @@ jobs:
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
       - name: Récupération du flux IoC du jour
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        continue-on-error: true # absent si pas de clé (Pull Request)
+        if: needs.threat-feed.outputs.present == 'true' # absent sans clé ThreatFox
         with:
           name: iocs-feed
           path: app/data
