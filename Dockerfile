@@ -1,5 +1,5 @@
 # ---- Étape 1 : construction des dépendances dans un environnement virtuel ----
-FROM python:3.13-slim AS builder
+FROM python:3.15-slim AS builder
 
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /build
@@ -8,7 +8,7 @@ RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ---- Étape 2 : image finale minimale, sans outils de build ----
-FROM python:3.13-slim
+FROM python:3.15-slim
 
 LABEL org.opencontainers.image.title="secureship" \
       org.opencontainers.image.description="IoC Checker API - pipeline DevSecOps" \
