@@ -11,6 +11,32 @@ chaque `git push` déclenche des contrôles de sécurité automatiques, et **auc
 > Objectif du projet : appliquer le principe du *shift-left security* — détecter les failles le plus tôt possible,
 > dans le code, les dépendances, les secrets, l'image Docker, l'infrastructure et l'application déployée.
 
+### 🌐 [Essayer le site en ligne](https://ca-secureship.nicerock-f90754a3.francecentral.azurecontainerapps.io) · [Documentation de l'API](https://ca-secureship.nicerock-f90754a3.francecentral.azurecontainerapps.io/docs)
+
+*(Au premier accès, le site met quelques secondes à se réveiller : il s'éteint sans visiteur pour ne rien coûter.)*
+
+![Page d'accueil de SecureShip](docs/accueil.png)
+
+<table>
+  <tr>
+    <td width="68%"><img src="docs/resultats.png" alt="Vérification groupée : lien d'hameçonnage, IP de serveur C2 et fichier EICAR signalés, domaine sain"></td>
+    <td width="32%"><img src="docs/mobile-sombre.png" alt="Version mobile en anglais et en mode sombre"></td>
+  </tr>
+  <tr>
+    <td>Vérification groupée, type détecté automatiquement, conseil adapté à chaque verdict</td>
+    <td>Mobile, mode sombre, français / anglais</td>
+  </tr>
+</table>
+
+### 🔎 Ce que la pipeline a bloqué dès le premier envoi
+
+| Contrôle | Problème détecté | Correction |
+|---|---|---|
+| Semgrep (supply chain) | 34 actions GitHub référencées par un tag modifiable | Épinglage de chaque action par SHA de commit |
+| Semgrep (Dependabot) | Nouvelles versions proposées dès leur publication | Délai de 7 jours avant toute mise à jour |
+| Trivy (image) | 5 CVE HIGH dans les bibliothèques embarquées par pip | pip retiré de l'image de production |
+| Azure (OIDC) | Identité GitHub refusée : nouveau format du *subject* | *Subject* configurable dans Terraform |
+
 ---
 
 ## 🏗️ Architecture
