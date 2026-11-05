@@ -67,7 +67,7 @@ Le flux est traité comme une **donnée non fiable** :
 - **Moindre privilège** : `permissions: contents: read` par défaut ; chaque job demande uniquement les droits nécessaires.
 - **Conteneur durci** : build multi-étapes, image *slim*, mises à jour de sécurité, exécution en **utilisateur non-root** (UID 10001), `HEALTHCHECK`, en-tête `Server` supprimé.
 - **Supply chain** : SBOM, signature et attestation Cosign, déploiement par digest (immuable), Dependabot pour les dépendances, l'image de base, les actions GitHub et Terraform.
-  Les actions tierces sont épinglées par version — par exemple `trivy-action ≥ 0.35.0`, les versions antérieures ayant été compromises en 2026 (CVE-2026-33634). Étape suivante : épingler par SHA de commit.
+  Toutes les actions GitHub sont **épinglées par SHA de commit** (immuable) : des tags de `trivy-action` ont été réécrits avec du code malveillant en 2026 (CVE-2026-33634). Dependabot applique un délai de 7 jours avant de proposer une nouvelle version.
 - **Application** : validation stricte des entrées (IP, domaine, hash), taille maximale, messages d'erreur sans réflexion de l'entrée (anti-XSS), en-têtes OWASP (CSP, HSTS, X-Frame-Options…).
 - **Infrastructure as Code** : Terraform, HTTPS forcé, mise à l'échelle à zéro, quota de logs et **alerte budget** pour maîtriser les coûts.
 
@@ -135,7 +135,7 @@ Dockerfile      image durcie multi-étapes
 
 ## 🗺️ Évolutions prévues
 
-- Épinglage des actions par SHA et vérification de la signature Cosign avant déploiement
+- Vérification de la signature Cosign avant déploiement
 - État Terraform distant (Azure Storage) et `terraform plan` en Pull Request
 - Déploiement sur Kubernetes (AKS / k3s) avec ArgoCD et politiques Kyverno
 

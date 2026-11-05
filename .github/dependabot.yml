@@ -1,14 +1,27 @@
 version: 2
+# cooldown : on attend 7 jours avant de proposer une nouvelle version publiée,
+# le temps qu'une éventuelle version piégée soit détectée et retirée.
 updates:
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
   - package-ecosystem: docker
     directory: /
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }
+    groups:
+      github-actions:
+        patterns: ["*"]
   - package-ecosystem: terraform
     directory: /infra
     schedule: { interval: monthly }
+    cooldown: { default-days: 7 }
+    ignore:
+      # Une version majeure du provider Azure change sa syntaxe : migration manuelle.
+      - dependency-name: hashicorp/azurerm
+        update-types: ["version-update:semver-major"]
