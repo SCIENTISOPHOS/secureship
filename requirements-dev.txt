@@ -2,6 +2,6 @@
 httpx
 pytest
 pytest-cov
-ruff
+ruff==0.16.9
 bandit
 pip-audit

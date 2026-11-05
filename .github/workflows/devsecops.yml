@@ -32,11 +32,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Mise à jour du flux
-        env:
-          ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
         # Sans clé, le site fonctionne en mode démonstration ; seule l'exécution
         # quotidienne exige la clé (son but est justement de rafraîchir le flux).
-        run: python scripts/update_iocs.py --days 7 ${{ github.event_name != 'schedule' && '--optional' || '' }}
+        env:
+          ABUSECH_AUTH_KEY: ${{ secrets.ABUSECH_AUTH_KEY }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            python scripts/update_iocs.py --days 7
+          else
+            python scripts/update_iocs.py --days 7 --optional
+          fi
       - name: Conservation du flux (traçabilité, 30 jours)
         uses: actions/upload-artifact@v4
         with:
@@ -74,17 +80,18 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install semgrep bandit[sarif]
       - name: Semgrep
-        run: semgrep scan --config p/python --config p/owasp-top-ten --error --sarif --output semgrep.sarif
+        # Résultats lisibles dans le journal + fichier SARIF pour l'onglet Security
+        run: semgrep scan --config p/python --config p/owasp-top-ten --error --sarif-output=semgrep.sarif
       - name: Bandit
         run: bandit -r app scripts -f sarif -o bandit.sarif
       - name: Envoi des résultats dans l'onglet Security
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
           category: semgrep
       - if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: bandit.sarif
           category: bandit
@@ -133,7 +140,7 @@ jobs:
           output_file_path: console,results.sarif
           soft_fail: true # passer à false une fois les écarts justifiés
       - if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: results.sarif
           category: checkov
@@ -173,7 +180,7 @@ jobs:
           output: trivy.sarif
           ignore-unfixed: true
       - if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy.sarif
           category: trivy
@@ -258,23 +265,34 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # Les valeurs passent par des variables d'environnement, jamais interpolées
+      # directement dans le script (protection contre l'injection de commandes).
       - name: Mise à jour de la Container App (image signée, par digest)
+        env:
+          APP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
         run: |
           az containerapp update \
-            --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --image "${IMAGE_NAME}@${{ needs.publish.outputs.digest }}" \
-            --set-env-vars APP_VERSION=${{ github.sha }}
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${IMAGE_NAME}@${DIGEST}" \
+            --set-env-vars "APP_VERSION=${GITHUB_SHA}"
       - id: url
         name: Récupération de l'URL publique
+        env:
+          APP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
         run: |
-          FQDN=$(az containerapp show -n "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-            -g "${{ vars.AZURE_RESOURCE_GROUP }}" --query properties.configuration.ingress.fqdn -o tsv)
+          FQDN=$(az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" \
+            --query properties.configuration.ingress.fqdn -o tsv)
           echo "url=https://${FQDN}" >> "$GITHUB_OUTPUT"
       - name: Smoke test
+        env:
+          APP_URL: ${{ steps.url.outputs.url }}
         run: |
           for i in $(seq 1 10); do
-            curl -fsS "${{ steps.url.outputs.url }}/health" && exit 0
+            curl -fsS "${APP_URL}/health" && exit 0
             sleep 10
           done
           exit 1
