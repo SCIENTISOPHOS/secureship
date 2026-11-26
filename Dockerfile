@@ -16,10 +16,15 @@ LABEL org.opencontainers.image.title="secureship" \
       org.opencontainers.image.description="IoC Checker API - pipeline DevSecOps" \
       org.opencontainers.image.licenses="MIT"
 
+# Change chaque jour (date passée par la pipeline) : force la réexécution de apt-get upgrade
+# au lieu de réutiliser une couche en cache qui contiendrait des paquets non corrigés.
+ARG SECURITY_UPDATES_DATE=unset
+
 # Mises à jour de sécurité du système de base, utilisateur non privilégié, et surface
 # d'attaque minimale : pas de pip en production (ses bibliothèques embarquées, comme
 # urllib3, étaient signalées par Trivy).
-RUN apt-get update \
+RUN echo "Mises à jour de sécurité du ${SECURITY_UPDATES_DATE}" \
+    && apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 app \
